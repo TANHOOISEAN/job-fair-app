@@ -1,9 +1,10 @@
 import React, { useState } from 'react'
-import { Trash2, Filter } from 'lucide-react'
+import { Trash2, Filter, ChevronDown } from 'lucide-react'
 
 export default function CandidateList({ candidates, onDelete }) {
   const [filterPath, setFilterPath] = useState('ALL')
   const [sortBy, setSortBy] = useState('recent')
+  const [expandedId, setExpandedId] = useState(null)
 
   const filteredCandidates = filterPath === 'ALL'
     ? candidates
@@ -125,16 +126,58 @@ export default function CandidateList({ candidates, onDelete }) {
 
                   {/* Timestamp */}
                   <p className="text-xs text-gray-400 mt-2">Added: {candidate.createdAt}</p>
+
+                  {/* Expanded Details */}
+                  {expandedId === candidate.id && (
+                    <div className="mt-4 pt-4 border-t border-gray-300 space-y-3">
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <p className="font-bold text-blue-900 mb-2">🏪 Station 1: Fast Survey</p>
+                        <div className="text-sm text-blue-800 space-y-1">
+                          {candidate.q1_situation && <p><strong>Current Status:</strong> {candidate.q1_situation}</p>}
+                          {candidate.q2_income && <p><strong>Income:</strong> {candidate.q2_income}</p>}
+                          {candidate.q3_environment && <p><strong>Environment:</strong> {candidate.q3_environment}</p>}
+                          {candidate.q4_social && <p><strong>Social:</strong> {candidate.q4_social}</p>}
+                          {candidate.q5_speed && <p><strong>Career Speed:</strong> {candidate.q5_speed}</p>}
+                        </div>
+                      </div>
+
+                      <div className="bg-purple-50 p-3 rounded-lg">
+                        <p className="font-bold text-purple-900 mb-2">🧠 Station 2: Personality & Pitch</p>
+                        <div className="text-sm text-purple-800 space-y-1">
+                          {candidate.disc && <p><strong>DISC Type:</strong> {candidate.disc}</p>}
+                          {candidate.notes && <p><strong>Notes:</strong> {candidate.notes}</p>}
+                        </div>
+                      </div>
+
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <p className="font-bold text-green-900 mb-2">✅ Station 3: Closing & Booking</p>
+                        <div className="text-sm text-green-800 space-y-1">
+                          {candidate.sessionTiming && <p><strong>Session Timing:</strong> {candidate.sessionTiming}</p>}
+                          {candidate.referralCollected && <p><strong>Referral Collected:</strong> Yes</p>}
+                          {candidate.referralDetails && <p><strong>Referral Details:</strong> {candidate.referralDetails}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Delete Button */}
-                <button
-                  onClick={() => onDelete(candidate.id)}
-                  className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition flex-shrink-0"
-                  title="Delete"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                {/* Action Buttons */}
+                <div className="flex gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => setExpandedId(expandedId === candidate.id ? null : candidate.id)}
+                    className="p-2 hover:bg-blue-50 text-blue-600 rounded-lg transition"
+                    title="View Details"
+                  >
+                    <ChevronDown className={`w-5 h-5 transition-transform ${expandedId === candidate.id ? 'rotate-180' : ''}`} />
+                  </button>
+                  <button
+                    onClick={() => onDelete(candidate.id)}
+                    className="p-2 hover:bg-red-50 text-red-600 rounded-lg transition"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
