@@ -14,37 +14,58 @@ export default function App() {
   const [currentEvent, setCurrentEvent] = useState(null)
   const [showEventForm, setShowEventForm] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
+  const [appReady, setAppReady] = useState(false)
 
-  // Load data from localStorage on mount
+  // Initialize app with robust error handling
   useEffect(() => {
     try {
+      // Clear corrupted localStorage on startup
+      if (typeof window !== 'undefined') {
+        const keys = ['jobFairCandidates', 'talentEvents', 'currentEvent']
+        for (const key of keys) {
+          try {
+            const data = localStorage.getItem(key)
+            if (data) JSON.parse(data)
+          } catch (e) {
+            localStorage.removeItem(key)
+            console.log(`Cleared corrupted ${key}`)
+          }
+        }
+      }
+
+      // Load clean data
       const saved = localStorage.getItem('jobFairCandidates')
       const savedEvents = localStorage.getItem('talentEvents')
       const savedCurrentEvent = localStorage.getItem('currentEvent')
 
-      try {
-        if (saved) setCandidates(JSON.parse(saved))
-      } catch (e) {
-        console.error('Error loading candidates:', e)
-        localStorage.removeItem('jobFairCandidates')
+      if (saved) {
+        try {
+          setCandidates(JSON.parse(saved))
+        } catch (e) {
+          console.error('Error parsing candidates')
+        }
       }
 
-      try {
-        if (savedEvents) setEvents(JSON.parse(savedEvents))
-      } catch (e) {
-        console.error('Error loading events:', e)
-        localStorage.removeItem('talentEvents')
+      if (savedEvents) {
+        try {
+          setEvents(JSON.parse(savedEvents))
+        } catch (e) {
+          console.error('Error parsing events')
+        }
       }
 
-      try {
-        if (savedCurrentEvent) setCurrentEvent(JSON.parse(savedCurrentEvent))
-      } catch (e) {
-        console.error('Error loading current event:', e)
-        localStorage.removeItem('currentEvent')
+      if (savedCurrentEvent) {
+        try {
+          setCurrentEvent(JSON.parse(savedCurrentEvent))
+        } catch (e) {
+          console.error('Error parsing current event')
+        }
       }
+
+      setAppReady(true)
     } catch (error) {
-      console.error('Error initializing app:', error)
-      localStorage.clear()
+      console.error('App initialization error:', error)
+      setAppReady(true)
     }
   }, [])
 
@@ -65,6 +86,17 @@ export default function App() {
     }
   }, [currentEvent])
 
+  if (!appReady) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading Together Talent Search Program...</p>
+        </div>
+      </div>
+    )
+  }
+
   const addCandidate = (candidate) => {
     setCandidates([...candidates, {
       ...candidate,
@@ -75,228 +107,156 @@ export default function App() {
       eventName: currentEvent?.name,
       eventVenue: currentEvent?.venue
     }])
-    setCurrentView('dashboard')
   }
 
-  const addEvent = (eventData) => {
+  const deleteCandidate = (id) => {
+    setCandidates(candidates.filter(c => c.id !== id))
+  }
+
+  const updateCandidate = (id, updates) => {
+    setCandidates(candidates.map(c => c.id === id ? { ...c, ...updates } : c))
+  }
+
+  const addEvent = (event) => {
     const newEvent = {
-      id: Date.now(),
-      date: eventData.date,
-      name: eventData.name,
-      venue: eventData.venue
+      ...event,
+      id: Date.now()
     }
     setEvents([...events, newEvent])
     setCurrentEvent(newEvent)
     setShowEventForm(false)
   }
 
-  const deleteCandidate = (id) => {
-    if (confirm('Remove this candidate?')) {
-      setCandidates(candidates.filter(c => c.id !== id))
-    }
-  }
-
-  const clearAll = () => {
-    if (confirm('This will DELETE all candidate data. Are you sure?')) {
-      setCandidates([])
-      localStorage.removeItem('jobFairCandidates')
-    }
+  const switchEvent = (eventId) => {
+    const event = events.find(e => e.id === eventId)
+    if (event) setCurrentEvent(event)
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-100 to-slate-200">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow">
-        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img src="/together-logo.png" alt="Together Logo" className="h-12 w-auto" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Together Talent Search Program</h1>
-                <p className="text-sm text-gray-500">Real-time candidate tracking & talent management</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowSettings(!showSettings)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition"
-              title="Settings"
-            >
-              <Settings className="w-6 h-6 text-gray-600" />
-            </button>
-          </div>
+      <div className="sticky top-0 z-10 bg-white shadow-lg border-b-2 border-blue-600">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-2xl font-bold text-gray-900">Together Talent Search Program</h1>
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition"
+          >
+            <Settings className="w-6 h-6" />
+          </button>
+        </div>
 
-          {/* Event Management */}
-          {showSettings && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-gray-900 mb-2">📅 Current Event</p>
-                  {currentEvent ? (
-                    <div className="text-sm text-gray-700">
-                      <p><strong>{currentEvent.name}</strong></p>
-                      <p>📍 {currentEvent.venue}</p>
-                      <p>🗓️ {new Date(currentEvent.date).toLocaleDateString()}</p>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500 italic">No event selected</p>
-                  )}
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowEventForm(!showEventForm)}
-                    className="px-3 py-2 bg-blue-50 text-blue-600 text-sm rounded-lg hover:bg-blue-100 transition"
-                  >
-                    {showEventForm ? '✕ Cancel' : '+ New Event'}
-                  </button>
-                </div>
-              </div>
-
-              {/* Event Form */}
-              {showEventForm && (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    const formData = new FormData(e.target)
-                    addEvent({
-                      date: formData.get('date'),
-                      name: formData.get('name'),
-                      venue: formData.get('venue')
-                    })
-                  }}
-                  className="space-y-3 p-3 bg-white rounded border border-blue-200"
-                >
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Event Date</label>
-                    <input type="date" name="date" className="input-field" required />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Programme Name</label>
-                    <input type="text" name="name" placeholder="e.g., Talent Search 2026" className="input-field" required />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 mb-1">Venue</label>
-                    <input type="text" name="venue" placeholder="e.g., Kuala Lumpur Convention Center" className="input-field" required />
-                  </div>
-                  <button type="submit" className="w-full btn-primary">Save Event</button>
-                </form>
-              )}
-
-              {/* Event History */}
-              {events.length > 0 && (
-                <div>
-                  <p className="text-sm font-bold text-gray-900 mb-2">📋 Past Events</p>
-                  <div className="space-y-2">
-                    {events.map((event) => (
-                      <button
-                        key={event.id}
-                        onClick={() => setCurrentEvent(event)}
-                        className={`w-full text-left px-3 py-2 rounded text-sm transition ${
-                          currentEvent?.id === event.id
-                            ? 'bg-blue-100 text-blue-900 font-bold'
-                            : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300'
-                        }`}
-                      >
-                        <strong>{event.name}</strong> • {event.venue} • {new Date(event.date).toLocaleDateString()}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
+        {/* View Tabs */}
+        <div className="border-t border-gray-200 bg-white">
+          <div className="max-w-7xl mx-auto px-4 flex gap-2 overflow-x-auto">
+            {[
+              { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
+              { id: 'entry', icon: PlayCircle, label: 'Entry' },
+              { id: 'candidates', icon: Briefcase, label: 'Candidates' },
+              { id: 'projector', icon: Calculator, label: 'Income Calculator' },
+              { id: 'export', icon: Download, label: 'Export' }
+            ].map(tab => (
               <button
-                onClick={clearAll}
-                className="w-full px-3 py-2 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100 transition flex items-center justify-center gap-2"
+                key={tab.id}
+                onClick={() => setCurrentView(tab.id)}
+                className={`flex items-center gap-2 px-4 py-3 font-medium transition ${
+                  currentView === tab.id
+                    ? 'text-blue-600 border-b-2 border-blue-600'
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
               >
-                <Trash2 className="w-4 h-4" />
-                Clear All Data
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
               </button>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
-      </header>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Tabs */}
-        <div className="flex gap-2 mb-6 border-b border-gray-300 flex-wrap">
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Event Selector and Settings */}
+        <div className="mb-6 flex gap-4">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 mb-2">Current Event</label>
+            <select
+              value={currentEvent?.id || ''}
+              onChange={(e) => switchEvent(Number(e.target.value))}
+              className="w-full input-field"
+            >
+              <option value="">Select an event</option>
+              {events.map(event => (
+                <option key={event.id} value={event.id}>
+                  {event.name} ({event.date})
+                </option>
+              ))}
+            </select>
+          </div>
           <button
-            onClick={() => setCurrentView('dashboard')}
-            className={`px-4 py-2 font-medium transition ${
-              currentView === 'dashboard'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            onClick={() => setShowEventForm(!showEventForm)}
+            className="btn-primary self-end"
           >
-            <BarChart3 className="w-4 h-4 inline mr-2" />
-            Dashboard
-          </button>
-          <button
-            onClick={() => setCurrentView('stations')}
-            className={`px-4 py-2 font-medium transition ${
-              currentView === 'stations'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <PlayCircle className="w-4 h-4 inline mr-2" />
-            Start New Candidate
-          </button>
-          <button
-            onClick={() => setCurrentView('projector')}
-            className={`px-4 py-2 font-medium transition ${
-              currentView === 'projector'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Calculator className="w-4 h-4 inline mr-2" />
-            Income Calculator
-          </button>
-          <button
-            onClick={() => setCurrentView('career')}
-            className={`px-4 py-2 font-medium transition ${
-              currentView === 'career'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Briefcase className="w-4 h-4 inline mr-2" />
-            Career Structure
-          </button>
-          <button
-            onClick={() => setCurrentView('list')}
-            className={`px-4 py-2 font-medium transition ${
-              currentView === 'list'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            📋 All Candidates ({candidates.length})
-          </button>
-          <button
-            onClick={() => setCurrentView('export')}
-            className={`px-4 py-2 font-medium transition ${
-              currentView === 'export'
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <Download className="w-4 h-4 inline mr-2" />
-            Export
+            + New Event
           </button>
         </div>
 
-        {/* Content */}
-        {currentView === 'dashboard' && <Dashboard candidates={candidates} eventDate={eventDate} />}
-        {currentView === 'projector' && <IncomeProjector />}
-        {currentView === 'career' && <CareerPresentation />}
-        {currentView === 'stations' && <StationFlow onComplete={addCandidate} />}
-        {currentView === 'list' && (
+        {/* Add Event Form */}
+        {showEventForm && (
+          <div className="card mb-6 border-2 border-blue-400">
+            <h3 className="text-lg font-bold mb-4">Create New Event</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const formData = new FormData(e.target)
+                addEvent({
+                  date: formData.get('date'),
+                  name: formData.get('name'),
+                  venue: formData.get('venue')
+                })
+              }}
+              className="space-y-4"
+            >
+              <input
+                type="date"
+                name="date"
+                required
+                className="w-full input-field"
+              />
+              <input
+                type="text"
+                name="name"
+                placeholder="Programme Name"
+                required
+                className="w-full input-field"
+              />
+              <input
+                type="text"
+                name="venue"
+                placeholder="Venue"
+                required
+                className="w-full input-field"
+              />
+              <button type="submit" className="btn-primary w-full">
+                Create Event
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* View Content */}
+        {currentView === 'dashboard' && <Dashboard candidates={candidates} />}
+        {currentView === 'entry' && currentEvent && (
+          <StationFlow candidate={{}} onComplete={addCandidate} />
+        )}
+        {currentView === 'candidates' && (
           <CandidateList
             candidates={candidates}
             onDelete={deleteCandidate}
+            onUpdate={updateCandidate}
           />
         )}
-        {currentView === 'export' && <ExportData candidates={candidates} />}
+        {currentView === 'projector' && <IncomeProjector />}
+        {currentView === 'export' && <ExportData candidates={candidates} events={events} />}
       </div>
     </div>
   )
