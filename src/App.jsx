@@ -151,9 +151,10 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 flex gap-2 overflow-x-auto">
             {[
               { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
-              { id: 'entry', icon: PlayCircle, label: 'Entry' },
-              { id: 'candidates', icon: Briefcase, label: 'Candidates' },
-              { id: 'projector', icon: Calculator, label: 'Income Calculator' },
+              { id: 'income', icon: Calculator, label: 'Income Calculator' },
+              { id: 'career', icon: Briefcase, label: 'Career Structure' },
+              { id: 'entry', icon: PlayCircle, label: 'Start New Candidate (Stations)' },
+              { id: 'candidates', icon: Briefcase, label: 'All Candidates' },
               { id: 'export', icon: Download, label: 'Export' }
             ].map(tab => (
               <button
@@ -245,7 +246,9 @@ export default function App() {
 
         {/* View Content */}
         {currentView === 'dashboard' && <Dashboard candidates={candidates} />}
-        {currentView === 'entry' && currentEvent && (
+        {currentView === 'income' && <IncomeProjector />}
+        {currentView === 'career' && <CareerPresentation />}
+        {currentView === 'entry' && (
           <StationFlow candidate={{}} onComplete={addCandidate} />
         )}
         {currentView === 'candidates' && (
@@ -255,7 +258,6 @@ export default function App() {
             onUpdate={updateCandidate}
           />
         )}
-        {currentView === 'projector' && <IncomeProjector />}
         {currentView === 'export' && <ExportData candidates={candidates} events={events} />}
       </div>
     </div>
