@@ -13,6 +13,10 @@ export default function IncomeProjector() {
   const [casesYear5, setCasesYear5] = useState(100)
   const [casesYear6, setCasesYear6] = useState(100)
 
+  // Editable cell state
+  const [editingYear, setEditingYear] = useState(null)
+  const [editValue, setEditValue] = useState('')
+
   // Input: ANP per case
   const [anpPerCase, setAnpPerCase] = useState(3000)
 
@@ -215,7 +219,36 @@ export default function IncomeProjector() {
               ].map((row, idx) => (
                 <tr key={row.year} className={idx % 2 === 0 ? 'bg-white' : 'bg-green-50'}>
                   <td className="border border-green-300 p-2 font-bold">{row.year}</td>
-                  <td className="border border-green-300 p-2 text-center font-bold text-green-700">{row.cases}</td>
+                  <td
+                    className="border border-green-300 p-2 text-center font-bold text-green-700 cursor-pointer hover:bg-green-200 transition"
+                    onClick={() => { setEditingYear(row.year); setEditValue(row.cases.toString()) }}
+                  >
+                    {editingYear === row.year ? (
+                      <input
+                        type="number"
+                        min="1"
+                        max="200"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={() => {
+                          const val = parseInt(editValue)
+                          if (val > 0 && val <= 200) row.setter(val)
+                          setEditingYear(null)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const val = parseInt(editValue)
+                            if (val > 0 && val <= 200) row.setter(val)
+                            setEditingYear(null)
+                          }
+                        }}
+                        autoFocus
+                        className="w-full text-center border border-green-400 rounded px-2 py-1"
+                      />
+                    ) : (
+                      row.cases
+                    )}
+                  </td>
                   <td className="border border-green-300 p-2 text-right text-green-700 font-bold">
                     {formatCurrency(row.cases * anpPerCase)}
                   </td>
@@ -228,100 +261,6 @@ export default function IncomeProjector() {
           </table>
         </div>
 
-        {/* Sliders for each year */}
-        <div className="space-y-3 p-3 bg-white rounded-lg border border-green-200">
-          <p className="text-sm font-bold text-gray-700 mb-3">Adjust cases per year:</p>
-
-          <div>
-            <div className="flex justify-between mb-1">
-              <label className="text-xs font-bold text-gray-700">Year 1</label>
-              <span className="text-xs font-bold text-green-700">{casesYear1} cases</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="200"
-              value={casesYear1}
-              onChange={(e) => setCasesYear1(parseInt(e.target.value))}
-              className="w-full h-2 bg-green-200 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between mb-1">
-              <label className="text-xs font-bold text-gray-700">Year 2</label>
-              <span className="text-xs font-bold text-green-700">{casesYear2} cases</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="200"
-              value={casesYear2}
-              onChange={(e) => setCasesYear2(parseInt(e.target.value))}
-              className="w-full h-2 bg-green-200 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between mb-1">
-              <label className="text-xs font-bold text-gray-700">Year 3</label>
-              <span className="text-xs font-bold text-green-700">{casesYear3} cases</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="200"
-              value={casesYear3}
-              onChange={(e) => setCasesYear3(parseInt(e.target.value))}
-              className="w-full h-2 bg-green-200 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between mb-1">
-              <label className="text-xs font-bold text-gray-700">Year 4</label>
-              <span className="text-xs font-bold text-green-700">{casesYear4} cases</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="200"
-              value={casesYear4}
-              onChange={(e) => setCasesYear4(parseInt(e.target.value))}
-              className="w-full h-2 bg-green-200 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between mb-1">
-              <label className="text-xs font-bold text-gray-700">Year 5</label>
-              <span className="text-xs font-bold text-green-700">{casesYear5} cases</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="200"
-              value={casesYear5}
-              onChange={(e) => setCasesYear5(parseInt(e.target.value))}
-              className="w-full h-2 bg-green-200 rounded-lg"
-            />
-          </div>
-
-          <div>
-            <div className="flex justify-between mb-1">
-              <label className="text-xs font-bold text-gray-700">Year 6</label>
-              <span className="text-xs font-bold text-green-700">{casesYear6} cases</span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="200"
-              value={casesYear6}
-              onChange={(e) => setCasesYear6(parseInt(e.target.value))}
-              className="w-full h-2 bg-green-200 rounded-lg"
-            />
-          </div>
-        </div>
       </div>
 
       {/* STEP 3: Promotion & Team */}
