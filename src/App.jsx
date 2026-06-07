@@ -17,12 +17,35 @@ export default function App() {
 
   // Load data from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem('jobFairCandidates')
-    const savedEvents = localStorage.getItem('talentEvents')
-    const savedCurrentEvent = localStorage.getItem('currentEvent')
-    if (saved) setCandidates(JSON.parse(saved))
-    if (savedEvents) setEvents(JSON.parse(savedEvents))
-    if (savedCurrentEvent) setCurrentEvent(JSON.parse(savedCurrentEvent))
+    try {
+      const saved = localStorage.getItem('jobFairCandidates')
+      const savedEvents = localStorage.getItem('talentEvents')
+      const savedCurrentEvent = localStorage.getItem('currentEvent')
+
+      try {
+        if (saved) setCandidates(JSON.parse(saved))
+      } catch (e) {
+        console.error('Error loading candidates:', e)
+        localStorage.removeItem('jobFairCandidates')
+      }
+
+      try {
+        if (savedEvents) setEvents(JSON.parse(savedEvents))
+      } catch (e) {
+        console.error('Error loading events:', e)
+        localStorage.removeItem('talentEvents')
+      }
+
+      try {
+        if (savedCurrentEvent) setCurrentEvent(JSON.parse(savedCurrentEvent))
+      } catch (e) {
+        console.error('Error loading current event:', e)
+        localStorage.removeItem('currentEvent')
+      }
+    } catch (error) {
+      console.error('Error initializing app:', error)
+      localStorage.clear()
+    }
   }, [])
 
   // Save to localStorage whenever candidates change
