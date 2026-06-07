@@ -59,8 +59,8 @@ export default function App() {
             <div className="flex items-center gap-4">
               <img src="/together-logo.png" alt="Together Logo" className="h-12 w-auto" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Job Fair Conversion System</h1>
-                <p className="text-sm text-gray-500">Real-time candidate tracking & conversion management</p>
+                <h1 className="text-2xl font-bold text-gray-900">Together Talent Search Program</h1>
+                <p className="text-sm text-gray-500">Real-time candidate tracking & talent management</p>
               </div>
             </div>
             <button
