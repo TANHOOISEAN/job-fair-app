@@ -23,6 +23,7 @@ export default function IncomeProjector() {
   // Input: Agents & Promotion
   const [numAgents, setNumAgents] = useState(0)
   const [promotion, setPromotion] = useState('agent') // agent, um, gm
+  const [agentCases, setAgentCases] = useState({}) // { agentId: [y1, y2, y3, y4, y5, y6] }
 
   // Commission rates (% of ANP) - APPLIED EVERY YEAR TO THAT YEAR'S SALES
   const commissionRates = {
@@ -87,14 +88,24 @@ export default function IncomeProjector() {
     year6: cases.year6 * 0.9 * anpPerCase
   }), [cases, anpPerCase])
 
-  const totalTeamSales = useMemo(() => ({
-    year1: teamSalesPerAgent.year1 * numAgents,
-    year2: teamSalesPerAgent.year2 * numAgents,
-    year3: teamSalesPerAgent.year3 * numAgents,
-    year4: teamSalesPerAgent.year4 * numAgents,
-    year5: teamSalesPerAgent.year5 * numAgents,
-    year6: teamSalesPerAgent.year6 * numAgents
-  }), [teamSalesPerAgent, numAgents])
+  const totalTeamSales = useMemo(() => {
+    if (numAgents === 0) {
+      return { year1: 0, year2: 0, year3: 0, year4: 0, year5: 0, year6: 0 }
+    }
+
+    // Calculate total from individual agent cases
+    const totals = { year1: 0, year2: 0, year3: 0, year4: 0, year5: 0, year6: 0 }
+    for (let i = 1; i <= numAgents; i++) {
+      const agentYearCases = agentCases[i] || [10, 10, 10, 10, 10, 10]
+      totals.year1 += agentYearCases[0] * 0.9 * anpPerCase
+      totals.year2 += agentYearCases[1] * 0.9 * anpPerCase
+      totals.year3 += agentYearCases[2] * 0.9 * anpPerCase
+      totals.year4 += agentYearCases[3] * 0.9 * anpPerCase
+      totals.year5 += agentYearCases[4] * 0.9 * anpPerCase
+      totals.year6 += agentYearCases[5] * 0.9 * anpPerCase
+    }
+    return totals
+  }, [numAgents, agentCases, anpPerCase])
 
   // COMPOUNDING TEAM OVERRIDE
   const teamOverride = useMemo(() => {
@@ -299,23 +310,82 @@ export default function IncomeProjector() {
             </div>
           </div>
 
-          {/* Agents slider */}
+          {/* Agents Management */}
           {(promotion === 'um' || promotion === 'gm') && (
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                How many agents to manage? {numAgents}
-              </label>
-              <input
-                type="range"
-                min="0"
-                max={promotion === 'um' ? 15 : 30}
-                value={numAgents}
-                onChange={(e) => setNumAgents(parseInt(e.target.value))}
-                className="w-full h-2 bg-purple-200 rounded-lg"
-              />
-              <p className="text-xs text-gray-600 mt-1">
-                {promotion === 'um' ? 'UM Override: 8.4% (Y1-2), 4.5% (Y3-5)' : 'GM Override: 5.6% (Y1-2), 1.647% (Y3), 4.5% (Y4-5)'}
-              </p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">
+                  How many agents to manage?
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max={promotion === 'um' ? 15 : 30}
+                  value={numAgents}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 0
+                    setNumAgents(val)
+                    // Initialize agent cases if not already set
+                    const newAgentCases = { ...agentCases }
+                    for (let i = 1; i <= val; i++) {
+                      if (!newAgentCases[i]) {
+                        newAgentCases[i] = [10, 10, 10, 10, 10, 10] // default 10 cases per year
+                      }
+                    }
+                    setAgentCases(newAgentCases)
+                  }}
+                  className="input-field w-20 text-center"
+                />
+                <p className="text-xs text-gray-600 mt-1">
+                  {promotion === 'um' ? 'UM Override: 8.4% (Y1-2), 4.5% (Y3-5)' : 'GM Override: 5.6% (Y1-2), 1.647% (Y3), 4.5% (Y4-5)'}
+                </p>
+              </div>
+
+              {/* Agent Cases Table */}
+              {numAgents > 0 && (
+                <div className="mt-4 p-3 bg-white rounded-lg border-2 border-purple-200">
+                  <p className="text-sm font-bold text-purple-900 mb-3">📊 Agent Performance (Cases per Year)</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="bg-purple-200">
+                          <th className="border border-purple-300 p-2 text-left font-bold">Agent</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y1</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y2</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y3</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y4</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y5</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y6</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: numAgents }, (_, i) => i + 1).map((agentNum) => (
+                          <tr key={agentNum} className={agentNum % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
+                            <td className="border border-purple-300 p-2 font-bold">Agent {agentNum}</td>
+                            {[0, 1, 2, 3, 4, 5].map((yearIdx) => (
+                              <td key={yearIdx} className="border border-purple-300 p-1 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={agentCases[agentNum]?.[yearIdx] || 10}
+                                  onChange={(e) => {
+                                    const newAgentCases = { ...agentCases }
+                                    if (!newAgentCases[agentNum]) newAgentCases[agentNum] = [10, 10, 10, 10, 10, 10]
+                                    newAgentCases[agentNum][yearIdx] = parseInt(e.target.value) || 0
+                                    setAgentCases(newAgentCases)
+                                  }}
+                                  className="w-12 text-center border border-purple-300 rounded px-1"
+                                />
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
