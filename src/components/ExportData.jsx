@@ -9,6 +9,9 @@ export default function ExportData({ candidates }) {
     }
 
     const headers = [
+      'Event Date',
+      'Programme Name',
+      'Venue',
       'Recruiter Name',
       'Name',
       'NRIC',
@@ -34,6 +37,9 @@ export default function ExportData({ candidates }) {
     ]
 
     const rows = candidates.map(c => [
+      c.eventDate || '',
+      c.eventName || '',
+      c.eventVenue || '',
       c.recruiterName || '',
       c.name,
       c.nric || '',

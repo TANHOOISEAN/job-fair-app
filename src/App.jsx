@@ -10,15 +10,19 @@ import IncomeProjector from './components/IncomeProjector'
 export default function App() {
   const [candidates, setCandidates] = useState([])
   const [currentView, setCurrentView] = useState('dashboard')
-  const [eventDate, setEventDate] = useState('')
+  const [events, setEvents] = useState([])
+  const [currentEvent, setCurrentEvent] = useState(null)
+  const [showEventForm, setShowEventForm] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
 
   // Load data from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem('jobFairCandidates')
-    const savedDate = localStorage.getItem('eventDate')
+    const savedEvents = localStorage.getItem('talentEvents')
+    const savedCurrentEvent = localStorage.getItem('currentEvent')
     if (saved) setCandidates(JSON.parse(saved))
-    if (savedDate) setEventDate(savedDate)
+    if (savedEvents) setEvents(JSON.parse(savedEvents))
+    if (savedCurrentEvent) setCurrentEvent(JSON.parse(savedCurrentEvent))
   }, [])
 
   // Save to localStorage whenever candidates change
@@ -26,15 +30,41 @@ export default function App() {
     localStorage.setItem('jobFairCandidates', JSON.stringify(candidates))
   }, [candidates])
 
+  // Save events to localStorage
   useEffect(() => {
-    if (eventDate) {
-      localStorage.setItem('eventDate', eventDate)
+    localStorage.setItem('talentEvents', JSON.stringify(events))
+  }, [events])
+
+  // Save current event to localStorage
+  useEffect(() => {
+    if (currentEvent) {
+      localStorage.setItem('currentEvent', JSON.stringify(currentEvent))
     }
-  }, [eventDate])
+  }, [currentEvent])
 
   const addCandidate = (candidate) => {
-    setCandidates([...candidates, { ...candidate, id: Date.now(), createdAt: new Date().toLocaleString() }])
+    setCandidates([...candidates, {
+      ...candidate,
+      id: Date.now(),
+      createdAt: new Date().toLocaleString(),
+      eventId: currentEvent?.id,
+      eventDate: currentEvent?.date,
+      eventName: currentEvent?.name,
+      eventVenue: currentEvent?.venue
+    }])
     setCurrentView('dashboard')
+  }
+
+  const addEvent = (eventData) => {
+    const newEvent = {
+      id: Date.now(),
+      date: eventData.date,
+      name: eventData.name,
+      venue: eventData.venue
+    }
+    setEvents([...events, newEvent])
+    setCurrentEvent(newEvent)
+    setShowEventForm(false)
   }
 
   const deleteCandidate = (id) => {
@@ -72,26 +102,91 @@ export default function App() {
             </button>
           </div>
 
-          {/* Event Date Settings */}
+          {/* Event Management */}
           {showSettings && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex items-center gap-3">
-                <label className="text-sm font-medium text-gray-700">Event Date:</label>
-                <input
-                  type="date"
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
-                />
-                {eventDate && <span className="text-sm text-gray-600">Set for {new Date(eventDate).toLocaleDateString()}</span>}
-                <button
-                  onClick={clearAll}
-                  className="ml-auto px-3 py-2 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100 transition flex items-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Clear All Data
-                </button>
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-gray-900 mb-2">📅 Current Event</p>
+                  {currentEvent ? (
+                    <div className="text-sm text-gray-700">
+                      <p><strong>{currentEvent.name}</strong></p>
+                      <p>📍 {currentEvent.venue}</p>
+                      <p>🗓️ {new Date(currentEvent.date).toLocaleDateString()}</p>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No event selected</p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowEventForm(!showEventForm)}
+                    className="px-3 py-2 bg-blue-50 text-blue-600 text-sm rounded-lg hover:bg-blue-100 transition"
+                  >
+                    {showEventForm ? '✕ Cancel' : '+ New Event'}
+                  </button>
+                </div>
               </div>
+
+              {/* Event Form */}
+              {showEventForm && (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    const formData = new FormData(e.target)
+                    addEvent({
+                      date: formData.get('date'),
+                      name: formData.get('name'),
+                      venue: formData.get('venue')
+                    })
+                  }}
+                  className="space-y-3 p-3 bg-white rounded border border-blue-200"
+                >
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Event Date</label>
+                    <input type="date" name="date" className="input-field" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Programme Name</label>
+                    <input type="text" name="name" placeholder="e.g., Talent Search 2026" className="input-field" required />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 mb-1">Venue</label>
+                    <input type="text" name="venue" placeholder="e.g., Kuala Lumpur Convention Center" className="input-field" required />
+                  </div>
+                  <button type="submit" className="w-full btn-primary">Save Event</button>
+                </form>
+              )}
+
+              {/* Event History */}
+              {events.length > 0 && (
+                <div>
+                  <p className="text-sm font-bold text-gray-900 mb-2">📋 Past Events</p>
+                  <div className="space-y-2">
+                    {events.map((event) => (
+                      <button
+                        key={event.id}
+                        onClick={() => setCurrentEvent(event)}
+                        className={`w-full text-left px-3 py-2 rounded text-sm transition ${
+                          currentEvent?.id === event.id
+                            ? 'bg-blue-100 text-blue-900 font-bold'
+                            : 'bg-white text-gray-700 border border-gray-200 hover:border-blue-300'
+                        }`}
+                      >
+                        <strong>{event.name}</strong> • {event.venue} • {new Date(event.date).toLocaleDateString()}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={clearAll}
+                className="w-full px-3 py-2 bg-red-50 text-red-600 text-sm rounded-lg hover:bg-red-100 transition flex items-center justify-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear All Data
+              </button>
             </div>
           )}
         </div>
