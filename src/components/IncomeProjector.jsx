@@ -307,203 +307,6 @@ export default function IncomeProjector() {
 
       </div>
 
-      {/* STEP 3: Promotion & Team - Now in separate section */}
-      {showTeamBuilder && (
-      <div className="card border-2 border-purple-300 bg-purple-50">
-        <h3 className="text-lg font-bold text-purple-900 mb-4">Step 3: Your Position & Team</h3>
-
-        <div className="space-y-4">
-          {/* Promotion */}
-          <div>
-            <p className="text-sm font-bold text-gray-700 mb-2">Your Position:</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => { setPromotion('agent'); setNumAgents(0); }}
-                className={`flex-1 p-2 rounded font-bold transition ${
-                  promotion === 'agent' ? 'bg-blue-600 text-white' : 'bg-white border-2 border-gray-300'
-                }`}
-              >
-                👤 Agent
-              </button>
-              <button
-                onClick={() => setPromotion('um')}
-                className={`flex-1 p-2 rounded font-bold transition ${
-                  promotion === 'um' ? 'bg-purple-600 text-white' : 'bg-white border-2 border-gray-300'
-                }`}
-              >
-                👨‍💼 UM
-              </button>
-              <button
-                onClick={() => setPromotion('gm')}
-                className={`flex-1 p-2 rounded font-bold transition ${
-                  promotion === 'gm' ? 'bg-red-600 text-white' : 'bg-white border-2 border-gray-300'
-                }`}
-              >
-                👑 GM
-              </button>
-            </div>
-          </div>
-
-          {/* Agents Management */}
-          {(promotion === 'um' || promotion === 'gm') && (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  How many agents to manage?
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max={promotion === 'um' ? 15 : 30}
-                  value={numAgents}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 0
-                    setNumAgents(val)
-                    // Initialize agent cases if not already set
-                    const newAgentCases = { ...agentCases }
-                    for (let i = 1; i <= val; i++) {
-                      if (!newAgentCases[i]) {
-                        newAgentCases[i] = [10, 10, 10, 10, 10, 10] // default 10 cases per year
-                      }
-                    }
-                    setAgentCases(newAgentCases)
-                  }}
-                  className="input-field w-20 text-center"
-                />
-                <p className="text-xs text-gray-600 mt-1">
-                  {promotion === 'um' ? 'UM Override: 8.4% (Y1-2), 4.5% (Y3-5)' : 'GM Override: 5.6% (Y1-2), 1.647% (Y3), 4.5% (Y4-5)'}
-                </p>
-              </div>
-
-              {/* Agent Cases Table */}
-              {numAgents > 0 && (
-                <div className="mt-4 p-3 bg-white rounded-lg border-2 border-purple-200">
-                  <p className="text-sm font-bold text-purple-900 mb-3">📊 Agent Performance (Cases per Year)</p>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm border-collapse">
-                      <thead>
-                        <tr className="bg-purple-200">
-                          <th className="border border-purple-300 p-2 text-left font-bold">Agent</th>
-                          <th className="border border-purple-300 p-2 text-center font-bold">Y1</th>
-                          <th className="border border-purple-300 p-2 text-center font-bold">Y2</th>
-                          <th className="border border-purple-300 p-2 text-center font-bold">Y3</th>
-                          <th className="border border-purple-300 p-2 text-center font-bold">Y4</th>
-                          <th className="border border-purple-300 p-2 text-center font-bold">Y5</th>
-                          <th className="border border-purple-300 p-2 text-center font-bold">Y6</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {Array.from({ length: numAgents }, (_, i) => i + 1).map((agentNum) => (
-                          <tr key={agentNum} className={agentNum % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
-                            <td className="border border-purple-300 p-2 font-bold">Agent {agentNum}</td>
-                            {[0, 1, 2, 3, 4, 5].map((yearIdx) => (
-                              <td key={yearIdx} className="border border-purple-300 p-1 text-center">
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="100"
-                                  value={agentCases[agentNum]?.[yearIdx] || 10}
-                                  onChange={(e) => {
-                                    const newAgentCases = { ...agentCases }
-                                    if (!newAgentCases[agentNum]) newAgentCases[agentNum] = [10, 10, 10, 10, 10, 10]
-                                    newAgentCases[agentNum][yearIdx] = parseInt(e.target.value) || 0
-                                    setAgentCases(newAgentCases)
-                                  }}
-                                  className="w-12 text-center border border-purple-300 rounded px-1"
-                                />
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Agent ANP (Individual) */}
-                  <div className="mt-4 p-3 bg-white rounded-lg border-2 border-purple-200">
-                    <p className="text-sm font-bold text-purple-900 mb-3">📊 Agent ANP (Individual)</p>
-                    <div className="space-y-2">
-                      {Array.from({ length: numAgents }, (_, i) => i + 1).map((agentNum) => (
-                        <div key={agentNum} className="flex gap-3 items-center p-2 bg-purple-50 rounded border border-purple-200">
-                          <span className="font-bold text-purple-900 min-w-20">Agent {agentNum}</span>
-                          <div className="flex-1">
-                            <label className="text-xs font-bold text-gray-600">ANP (RM)</label>
-                            <input
-                              type="number"
-                              min="1000"
-                              max="10000"
-                              step="100"
-                              value={agentANP[agentNum] || 2000}
-                              onChange={(e) => {
-                                const newAgentANP = { ...agentANP }
-                                newAgentANP[agentNum] = parseInt(e.target.value) || 2000
-                                setAgentANP(newAgentANP)
-                              }}
-                              placeholder="2000"
-                              className="w-full border border-purple-300 rounded px-2 py-1 text-sm"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Agent Income Contribution Table */}
-                  <div className="mt-4 p-3 bg-white rounded-lg border-2 border-purple-200">
-                    <p className="text-sm font-bold text-purple-900 mb-3">💰 Agent Income per Year (Cases × ANP × UM Rate)</p>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs border-collapse">
-                        <thead>
-                          <tr className="bg-purple-200">
-                            <th className="border border-purple-300 p-2 text-left font-bold">Agent</th>
-                            <th className="border border-purple-300 p-2 text-center font-bold">ANP</th>
-                            <th className="border border-purple-300 p-2 text-center font-bold">Y1</th>
-                            <th className="border border-purple-300 p-2 text-center font-bold">Y2</th>
-                            <th className="border border-purple-300 p-2 text-center font-bold">Y3</th>
-                            <th className="border border-purple-300 p-2 text-center font-bold">Y4</th>
-                            <th className="border border-purple-300 p-2 text-center font-bold">Y5</th>
-                            <th className="border border-purple-300 p-2 text-center font-bold">Y6</th>
-                            <th className="border border-purple-300 p-2 text-right font-bold">Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Array.from({ length: numAgents }, (_, i) => i + 1).map((agentNum) => {
-                            const cases = agentCases[agentNum] || [10, 10, 10, 10, 10, 10]
-                            const anp = agentANP[agentNum] || 2000
-                            const y1 = Math.round(cases[0] * anp * overrideRates.um.year1)
-                            const y2 = Math.round(cases[1] * anp * overrideRates.um.year2)
-                            const y3 = Math.round(cases[2] * anp * overrideRates.um.year3)
-                            const y4 = Math.round(cases[3] * anp * overrideRates.um.year4)
-                            const y5 = Math.round(cases[4] * anp * overrideRates.um.year5)
-                            const y6 = Math.round(cases[5] * anp * overrideRates.um.year6)
-                            const total = y1 + y2 + y3 + y4 + y5 + y6
-
-                            return (
-                              <tr key={agentNum} className={agentNum % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
-                                <td className="border border-purple-300 p-2 font-bold text-purple-900">Agent {agentNum}</td>
-                                <td className="border border-purple-300 p-2 text-center text-purple-700 font-bold">RM{anp.toLocaleString()}</td>
-                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y1)}</td>
-                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y2)}</td>
-                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y3)}</td>
-                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y4)}</td>
-                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y5)}</td>
-                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y6)}</td>
-                                <td className="border border-purple-300 p-2 text-right text-purple-900 font-bold">{formatCurrency(total)}</td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-      )}
-
       {/* RESULTS - DETAILED TABLE VIEW */}
       <div className="card bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-400 p-0">
         <div className="p-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg">
@@ -687,6 +490,191 @@ export default function IncomeProjector() {
           {showTeamBuilder ? '✕ Hide Team Benefits' : '👥 View Team Benefits'}
         </button>
       </div>
+
+      {/* STEP 3: Promotion & Team - Now at bottom */}
+      {showTeamBuilder && (
+      <div className="card border-2 border-purple-300 bg-purple-50">
+        <h3 className="text-lg font-bold text-purple-900 mb-4">Step 3: Your Position & Team</h3>
+
+        <div className="space-y-4">
+          {/* Promotion */}
+          <div>
+            <p className="text-sm font-bold text-gray-700 mb-2">Your Position:</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setPromotion('agent'); setNumAgents(0); }}
+                className={`flex-1 p-2 rounded font-bold transition ${
+                  promotion === 'agent' ? 'bg-blue-600 text-white' : 'bg-white border-2 border-gray-300'
+                }`}
+              >
+                👤 Agent
+              </button>
+              <button
+                onClick={() => setPromotion('um')}
+                className={`flex-1 p-2 rounded font-bold transition ${
+                  promotion === 'um' ? 'bg-purple-600 text-white' : 'bg-white border-2 border-gray-300'
+                }`}
+              >
+                👨‍💼 UM
+              </button>
+              <button
+                onClick={() => setPromotion('gm')}
+                className={`flex-1 p-2 rounded font-bold transition ${
+                  promotion === 'gm' ? 'bg-red-600 text-white' : 'bg-white border-2 border-gray-300'
+                }`}
+              >
+                👑 GM
+              </button>
+            </div>
+          </div>
+
+          {/* Agents Management */}
+          {(promotion === 'um' || promotion === 'gm') && (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">How many agents to manage?</label>
+                <input
+                  type="number"
+                  min="0"
+                  max={promotion === 'um' ? 15 : 30}
+                  value={numAgents}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 0
+                    setNumAgents(val)
+                    const newAgentCases = { ...agentCases }
+                    for (let i = 1; i <= val; i++) {
+                      if (!newAgentCases[i]) newAgentCases[i] = [10, 10, 10, 10, 10, 10]
+                    }
+                    setAgentCases(newAgentCases)
+                  }}
+                  className="input-field w-20 text-center"
+                />
+              </div>
+
+              {numAgents > 0 && (
+                <div className="mt-4 p-3 bg-white rounded-lg border-2 border-purple-200">
+                  <p className="text-sm font-bold text-purple-900 mb-3">📊 Agent Performance (Cases per Year)</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr className="bg-purple-200">
+                          <th className="border border-purple-300 p-2 text-left font-bold">Agent</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y1</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y2</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y3</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y4</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y5</th>
+                          <th className="border border-purple-300 p-2 text-center font-bold">Y6</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Array.from({ length: numAgents }, (_, i) => i + 1).map((agentNum) => (
+                          <tr key={agentNum} className={agentNum % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
+                            <td className="border border-purple-300 p-2 font-bold">Agent {agentNum}</td>
+                            {[0, 1, 2, 3, 4, 5].map((yearIdx) => (
+                              <td key={yearIdx} className="border border-purple-300 p-1 text-center">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={agentCases[agentNum]?.[yearIdx] || 10}
+                                  onChange={(e) => {
+                                    const newAgentCases = { ...agentCases }
+                                    if (!newAgentCases[agentNum]) newAgentCases[agentNum] = [10, 10, 10, 10, 10, 10]
+                                    newAgentCases[agentNum][yearIdx] = parseInt(e.target.value) || 0
+                                    setAgentCases(newAgentCases)
+                                  }}
+                                  className="w-12 text-center border border-purple-300 rounded px-1"
+                                />
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-white rounded-lg border-2 border-purple-200">
+                    <p className="text-sm font-bold text-purple-900 mb-3">📊 Agent ANP</p>
+                    <div className="space-y-2">
+                      {Array.from({ length: numAgents }, (_, i) => i + 1).map((agentNum) => (
+                        <div key={agentNum} className="flex gap-3 items-center p-2 bg-purple-50 rounded border border-purple-200">
+                          <span className="font-bold text-purple-900 min-w-20">Agent {agentNum}</span>
+                          <div className="flex-1">
+                            <label className="text-xs font-bold text-gray-600">ANP (RM)</label>
+                            <input
+                              type="number"
+                              min="1000"
+                              max="10000"
+                              step="100"
+                              value={agentANP[agentNum] || 2000}
+                              onChange={(e) => {
+                                const newAgentANP = { ...agentANP }
+                                newAgentANP[agentNum] = parseInt(e.target.value) || 2000
+                                setAgentANP(newAgentANP)
+                              }}
+                              placeholder="2000"
+                              className="w-full border border-purple-300 rounded px-2 py-1 text-sm"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="mt-4 p-3 bg-white rounded-lg border-2 border-purple-200">
+                    <p className="text-sm font-bold text-purple-900 mb-3">💰 Agent Income per Year</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-purple-200">
+                            <th className="border border-purple-300 p-2 text-left font-bold">Agent</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">ANP</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y1</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y2</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y3</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y4</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y5</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y6</th>
+                            <th className="border border-purple-300 p-2 text-right font-bold">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Array.from({ length: numAgents }, (_, i) => i + 1).map((agentNum) => {
+                            const cases = agentCases[agentNum] || [10, 10, 10, 10, 10, 10]
+                            const anp = agentANP[agentNum] || 2000
+                            const y1 = Math.round(cases[0] * anp * overrideRates.um.year1)
+                            const y2 = Math.round(cases[1] * anp * overrideRates.um.year2)
+                            const y3 = Math.round(cases[2] * anp * overrideRates.um.year3)
+                            const y4 = Math.round(cases[3] * anp * overrideRates.um.year4)
+                            const y5 = Math.round(cases[4] * anp * overrideRates.um.year5)
+                            const y6 = Math.round(cases[5] * anp * overrideRates.um.year6)
+                            const total = y1 + y2 + y3 + y4 + y5 + y6
+                            return (
+                              <tr key={agentNum} className={agentNum % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
+                                <td className="border border-purple-300 p-2 font-bold text-purple-900">Agent {agentNum}</td>
+                                <td className="border border-purple-300 p-2 text-center text-purple-700 font-bold">RM{anp.toLocaleString()}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y1)}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y2)}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y3)}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y4)}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y5)}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y6)}</td>
+                                <td className="border border-purple-300 p-2 text-right text-purple-900 font-bold">{formatCurrency(total)}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      )}
     </div>
   )
 }
