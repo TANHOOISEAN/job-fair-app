@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { Calculator, Users, TrendingUp } from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
 
 export default function IncomeProjector() {
   // Product selection
@@ -15,6 +16,7 @@ export default function IncomeProjector() {
 
   // Editable cell state
   const [editingYear, setEditingYear] = useState(null)
+  const [editType, setEditType] = useState(null) // 'cases' or 'anp'
   const [editValue, setEditValue] = useState('')
 
   // Input: ANP per case
@@ -24,6 +26,8 @@ export default function IncomeProjector() {
   const [numAgents, setNumAgents] = useState(0)
   const [promotion, setPromotion] = useState('agent') // agent, um, gm
   const [agentCases, setAgentCases] = useState({}) // { agentId: [y1, y2, y3, y4, y5, y6] }
+  const [agentANP, setAgentANP] = useState({}) // { agentId: ANP value }
+  const [showTeamBuilder, setShowTeamBuilder] = useState(false) // Toggle for Team section
 
   // Commission rates (% of ANP) - APPLIED EVERY YEAR TO THAT YEAR'S SALES
   const commissionRates = {
@@ -191,90 +195,120 @@ export default function IncomeProjector() {
       <div className="card border-2 border-green-300 bg-green-50">
         <h3 className="text-lg font-bold text-green-900 mb-4">Step 2: Your Personal Sales (Cases/Year)</h3>
 
-        {/* ANP per case */}
-        <div className="mb-4 p-3 bg-white rounded-lg border border-green-200">
-          <label className="block text-sm font-bold text-gray-700 mb-2">
-            Average ANP per case: {formatCurrency(anpPerCase)}
-          </label>
-          <input
-            type="range"
-            min="1000"
-            max="10000"
-            step="100"
-            value={anpPerCase}
-            onChange={(e) => setAnpPerCase(parseInt(e.target.value))}
-            className="w-full h-2 bg-green-200 rounded-lg"
-          />
-          <p className="text-xs text-gray-600 mt-1">Range: RM1K - RM10K</p>
-        </div>
-
-        {/* Summary Table */}
+        {/* Summary Table - Detailed breakdown */}
         <div className="mb-4 overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-green-200">
                 <th className="border border-green-300 p-2 font-bold text-left">Year</th>
                 <th className="border border-green-300 p-2 font-bold text-center">Cases</th>
-                <th className="border border-green-300 p-2 font-bold text-right">ANP</th>
-                <th className="border border-green-300 p-2 font-bold text-right">Income</th>
+                <th className="border border-green-300 p-2 font-bold text-right">Avg Case Size</th>
+                <th className="border border-green-300 p-2 font-bold text-right">Total ANP</th>
+                <th className="border border-green-300 p-2 font-bold text-right">Year Commission</th>
+                <th className="border border-green-300 p-2 font-bold text-right">Cumulative Income</th>
               </tr>
             </thead>
             <tbody>
               {[
-                { year: 'Y1', cases: casesYear1, setter: setCasesYear1 },
-                { year: 'Y2', cases: casesYear2, setter: setCasesYear2 },
-                { year: 'Y3', cases: casesYear3, setter: setCasesYear3 },
-                { year: 'Y4', cases: casesYear4, setter: setCasesYear4 },
-                { year: 'Y5', cases: casesYear5, setter: setCasesYear5 },
-                { year: 'Y6', cases: casesYear6, setter: setCasesYear6 }
-              ].map((row, idx) => (
-                <tr key={row.year} className={idx % 2 === 0 ? 'bg-white' : 'bg-green-50'}>
-                  <td className="border border-green-300 p-2 font-bold">{row.year}</td>
-                  <td
-                    className="border border-green-300 p-2 text-center font-bold text-green-700 cursor-pointer hover:bg-green-200 transition"
-                    onClick={() => { setEditingYear(row.year); setEditValue(row.cases.toString()) }}
-                  >
-                    {editingYear === row.year ? (
-                      <input
-                        type="number"
-                        min="1"
-                        max="200"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={() => {
-                          const val = parseInt(editValue)
-                          if (val > 0 && val <= 200) row.setter(val)
-                          setEditingYear(null)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                { year: 'Y1', cases: casesYear1, setter: setCasesYear1, key: 'year1' },
+                { year: 'Y2', cases: casesYear2, setter: setCasesYear2, key: 'year2' },
+                { year: 'Y3', cases: casesYear3, setter: setCasesYear3, key: 'year3' },
+                { year: 'Y4', cases: casesYear4, setter: setCasesYear4, key: 'year4' },
+                { year: 'Y5', cases: casesYear5, setter: setCasesYear5, key: 'year5' },
+                { year: 'Y6', cases: casesYear6, setter: setCasesYear6, key: 'year6' }
+              ].map((row, idx) => {
+                const totalANP = row.cases * anpPerCase
+                const yearCommission = Math.round(totalANP * rates[row.key])
+                const cumulativeIncome = totalIncome[row.key]
+
+                return (
+                  <tr key={row.year} className={idx % 2 === 0 ? 'bg-white' : 'bg-green-50'}>
+                    <td className="border border-green-300 p-2 font-bold">{row.year}</td>
+                    <td
+                      className="border border-green-300 p-2 text-center font-bold text-green-700 cursor-pointer hover:bg-green-200 transition"
+                      onClick={() => { setEditingYear(row.year); setEditType('cases'); setEditValue(row.cases.toString()) }}
+                    >
+                      {editingYear === row.year && editType === 'cases' ? (
+                        <input
+                          type="number"
+                          min="1"
+                          max="200"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => {
                             const val = parseInt(editValue)
                             if (val > 0 && val <= 200) row.setter(val)
                             setEditingYear(null)
-                          }
-                        }}
-                        autoFocus
-                        className="w-full text-center border border-green-400 rounded px-2 py-1"
-                      />
-                    ) : (
-                      row.cases
-                    )}
-                  </td>
-                  <td className="border border-green-300 p-2 text-right text-green-700 font-bold">
-                    {formatCurrency(row.cases * anpPerCase)}
-                  </td>
-                  <td className="border border-green-300 p-2 text-right text-green-900 font-bold">
-                    {formatCurrency(row.cases * anpPerCase * Object.values(rates)[idx])}
-                  </td>
-                </tr>
-              ))}
+                            setEditType(null)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const val = parseInt(editValue)
+                              if (val > 0 && val <= 200) row.setter(val)
+                              setEditingYear(null)
+                              setEditType(null)
+                            }
+                          }}
+                          autoFocus
+                          className="w-full text-center border border-green-400 rounded px-2 py-1"
+                        />
+                      ) : (
+                        row.cases
+                      )}
+                    </td>
+                    <td
+                      className="border border-green-300 p-2 text-right text-green-700 font-bold cursor-pointer hover:bg-green-200 transition"
+                      onClick={() => { setEditingYear(row.year); setEditType('anp'); setEditValue(anpPerCase.toString()) }}
+                    >
+                      {editingYear === row.year && editType === 'anp' ? (
+                        <input
+                          type="number"
+                          min="1000"
+                          max="10000"
+                          step="100"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onBlur={() => {
+                            const val = parseInt(editValue)
+                            if (val >= 1000 && val <= 10000) setAnpPerCase(val)
+                            setEditingYear(null)
+                            setEditType(null)
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              const val = parseInt(editValue)
+                              if (val >= 1000 && val <= 10000) setAnpPerCase(val)
+                              setEditingYear(null)
+                              setEditType(null)
+                            }
+                          }}
+                          autoFocus
+                          className="w-full text-right border border-green-400 rounded px-2 py-1"
+                        />
+                      ) : (
+                        formatCurrency(anpPerCase)
+                      )}
+                    </td>
+                    <td className="border border-green-300 p-2 text-right text-green-700 font-bold">
+                      {formatCurrency(totalANP)}
+                    </td>
+                    <td className="border border-green-300 p-2 text-right text-blue-700 font-bold">
+                      {formatCurrency(yearCommission)}
+                    </td>
+                    <td className="border border-green-300 p-2 text-right text-green-900 font-bold">
+                      {formatCurrency(cumulativeIncome)}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
 
       </div>
 
-      {/* STEP 3: Promotion & Team */}
+      {/* STEP 3: Promotion & Team - Now in separate section */}
+      {showTeamBuilder && (
       <div className="card border-2 border-purple-300 bg-purple-50">
         <h3 className="text-lg font-bold text-purple-900 mb-4">Step 3: Your Position & Team</h3>
 
@@ -384,12 +418,91 @@ export default function IncomeProjector() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Agent ANP (Individual) */}
+                  <div className="mt-4 p-3 bg-white rounded-lg border-2 border-purple-200">
+                    <p className="text-sm font-bold text-purple-900 mb-3">📊 Agent ANP (Individual)</p>
+                    <div className="space-y-2">
+                      {Array.from({ length: numAgents }, (_, i) => i + 1).map((agentNum) => (
+                        <div key={agentNum} className="flex gap-3 items-center p-2 bg-purple-50 rounded border border-purple-200">
+                          <span className="font-bold text-purple-900 min-w-20">Agent {agentNum}</span>
+                          <div className="flex-1">
+                            <label className="text-xs font-bold text-gray-600">ANP (RM)</label>
+                            <input
+                              type="number"
+                              min="1000"
+                              max="10000"
+                              step="100"
+                              value={agentANP[agentNum] || 2000}
+                              onChange={(e) => {
+                                const newAgentANP = { ...agentANP }
+                                newAgentANP[agentNum] = parseInt(e.target.value) || 2000
+                                setAgentANP(newAgentANP)
+                              }}
+                              placeholder="2000"
+                              className="w-full border border-purple-300 rounded px-2 py-1 text-sm"
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Agent Income Contribution Table */}
+                  <div className="mt-4 p-3 bg-white rounded-lg border-2 border-purple-200">
+                    <p className="text-sm font-bold text-purple-900 mb-3">💰 Agent Income per Year (Cases × ANP × UM Rate)</p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-purple-200">
+                            <th className="border border-purple-300 p-2 text-left font-bold">Agent</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">ANP</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y1</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y2</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y3</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y4</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y5</th>
+                            <th className="border border-purple-300 p-2 text-center font-bold">Y6</th>
+                            <th className="border border-purple-300 p-2 text-right font-bold">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Array.from({ length: numAgents }, (_, i) => i + 1).map((agentNum) => {
+                            const cases = agentCases[agentNum] || [10, 10, 10, 10, 10, 10]
+                            const anp = agentANP[agentNum] || 2000
+                            const y1 = Math.round(cases[0] * anp * overrideRates.um.year1)
+                            const y2 = Math.round(cases[1] * anp * overrideRates.um.year2)
+                            const y3 = Math.round(cases[2] * anp * overrideRates.um.year3)
+                            const y4 = Math.round(cases[3] * anp * overrideRates.um.year4)
+                            const y5 = Math.round(cases[4] * anp * overrideRates.um.year5)
+                            const y6 = Math.round(cases[5] * anp * overrideRates.um.year6)
+                            const total = y1 + y2 + y3 + y4 + y5 + y6
+
+                            return (
+                              <tr key={agentNum} className={agentNum % 2 === 0 ? 'bg-white' : 'bg-purple-50'}>
+                                <td className="border border-purple-300 p-2 font-bold text-purple-900">Agent {agentNum}</td>
+                                <td className="border border-purple-300 p-2 text-center text-purple-700 font-bold">RM{anp.toLocaleString()}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y1)}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y2)}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y3)}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y4)}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y5)}</td>
+                                <td className="border border-purple-300 p-2 text-center text-green-700 font-bold">{formatCurrency(y6)}</td>
+                                <td className="border border-purple-300 p-2 text-right text-purple-900 font-bold">{formatCurrency(total)}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
+      )}
 
       {/* RESULTS - DETAILED TABLE VIEW */}
       <div className="card bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 border-2 border-green-400 p-0">
@@ -520,12 +633,59 @@ export default function IncomeProjector() {
               </div>
             </div>
           </div>
+
+          {/* Income Growth Chart */}
+          <div className="mt-6 p-4 bg-white rounded-lg border-2 border-green-400">
+            <h3 className="text-lg font-bold text-green-900 mb-4">📈 Your {promotion.toUpperCase()} Income Growth Over 6 Years</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={[
+                { year: 'Y1', income: totalIncome.year1 },
+                { year: 'Y2', income: totalIncome.year2 },
+                { year: 'Y3', income: totalIncome.year3 },
+                { year: 'Y4', income: totalIncome.year4 },
+                { year: 'Y5', income: totalIncome.year5 },
+                { year: 'Y6', income: totalIncome.year6 }
+              ]}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis dataKey="year" stroke="#666" />
+                <YAxis stroke="#666" formatter={(value) => `RM${(value / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  formatter={(value) => `RM${value.toLocaleString()}`}
+                  contentStyle={{ backgroundColor: '#f0f9ff', border: '2px solid #0ea5e9' }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="income"
+                  stroke="#16a34a"
+                  strokeWidth={3}
+                  dot={{ fill: '#16a34a', r: 6 }}
+                  activeDot={{ r: 8 }}
+                  name="Annual Income"
+                  isAnimationActive={true}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="mt-3 p-3 bg-green-50 rounded text-sm text-green-900">
+              <strong>💡 See how your income grows year by year!</strong> Adjust cases, ANP, or team size above to see the impact on your 6-year projection.
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Info */}
       <div className="card p-3 bg-blue-50 border border-blue-200 text-xs text-blue-900">
         <strong>ℹ️ How it works:</strong> Adjust cases per year, ANP per case, and team size to see different scenarios. Your income grows with: (1) More cases sold, (2) Higher average premiums, (3) Team overrides from agents you manage.
+      </div>
+
+      {/* Button to View Team Benefits - At Bottom */}
+      <div className="mt-6 flex gap-3">
+        <button
+          onClick={() => setShowTeamBuilder(!showTeamBuilder)}
+          className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-4 rounded-lg transition flex items-center justify-center gap-2 text-lg"
+        >
+          {showTeamBuilder ? '✕ Hide Team Benefits' : '👥 View Team Benefits'}
+        </button>
       </div>
     </div>
   )

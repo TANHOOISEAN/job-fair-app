@@ -3,9 +3,11 @@ import { ChevronRight, ChevronLeft, CheckCircle2, Save, RotateCcw } from 'lucide
 import Station1 from './stations/Station1'
 import Station2 from './stations/Station2'
 import Station3 from './stations/Station3'
+import DISCReport from './DISCReport'
 
 export default function StationFlow({ onComplete }) {
   const [currentStation, setCurrentStation] = useState(1)
+  const [showReport, setShowReport] = useState(false)
   const [formData, setFormData] = useState({
     // Recruiter Info
     recruiterName: '',
@@ -44,7 +46,9 @@ export default function StationFlow({ onComplete }) {
   }
 
   const handleNext = () => {
-    if (currentStation < 3) {
+    if (currentStation === 2) {
+      setShowReport(true)
+    } else if (currentStation < 3) {
       setCurrentStation(currentStation + 1)
     }
   }
@@ -140,18 +144,36 @@ export default function StationFlow({ onComplete }) {
       {/* Station Title */}
       <h2 className="text-2xl font-bold text-gray-900 mb-6">{getStationTitle()}</h2>
 
-      {/* Station Content */}
-      <div className="card mb-6">
-        {currentStation === 1 && (
-          <Station1 formData={formData} onChange={handleDataChange} />
-        )}
-        {currentStation === 2 && (
-          <Station2 formData={formData} onChange={handleDataChange} />
-        )}
-        {currentStation === 3 && (
-          <Station3 formData={formData} onChange={handleDataChange} />
-        )}
-      </div>
+      {/* Station Content or Report */}
+      {!showReport ? (
+        <div className="card mb-6">
+          {currentStation === 1 && (
+            <Station1 formData={formData} onChange={handleDataChange} />
+          )}
+          {currentStation === 2 && (
+            <Station2 formData={formData} onChange={handleDataChange} />
+          )}
+          {currentStation === 3 && (
+            <Station3 formData={formData} onChange={handleDataChange} />
+          )}
+        </div>
+      ) : (
+        <div className="mb-6">
+          <DISCReport
+            answers={{
+              situation: formData.q1_situation,
+              pressure: formData.q2_income,
+              environment: formData.q3_environment,
+              social: formData.q4_social,
+              speed: formData.q5_speed
+            }}
+            onComplete={() => {
+              setCurrentStation(3)
+              setShowReport(false)
+            }}
+          />
+        </div>
+      )}
 
       {/* Navigation Buttons */}
       <div className="flex gap-3 justify-between">

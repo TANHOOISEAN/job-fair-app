@@ -151,9 +151,9 @@ export default function App() {
           <div className="max-w-7xl mx-auto px-4 flex gap-2 overflow-x-auto">
             {[
               { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
+              { id: 'entry', icon: PlayCircle, label: 'Start New Candidate (Stations)' },
               { id: 'income', icon: Calculator, label: 'Income Calculator' },
               { id: 'career', icon: Briefcase, label: 'Career Structure' },
-              { id: 'entry', icon: PlayCircle, label: 'Start New Candidate (Stations)' },
               { id: 'candidates', icon: Briefcase, label: 'All Candidates' },
               { id: 'export', icon: Download, label: 'Export' }
             ].map(tab => (
@@ -176,72 +176,76 @@ export default function App() {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {/* Event Selector and Settings */}
-        <div className="mb-6 flex gap-4">
-          <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Current Event</label>
-            <select
-              value={currentEvent?.id || ''}
-              onChange={(e) => switchEvent(Number(e.target.value))}
-              className="w-full input-field"
-            >
-              <option value="">Select an event</option>
-              {events.map(event => (
-                <option key={event.id} value={event.id}>
-                  {event.name} ({event.date})
-                </option>
-              ))}
-            </select>
-          </div>
-          <button
-            onClick={() => setShowEventForm(!showEventForm)}
-            className="btn-primary self-end"
-          >
-            + New Event
-          </button>
-        </div>
-
-        {/* Add Event Form */}
-        {showEventForm && (
-          <div className="card mb-6 border-2 border-blue-400">
-            <h3 className="text-lg font-bold mb-4">Create New Event</h3>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault()
-                const formData = new FormData(e.target)
-                addEvent({
-                  date: formData.get('date'),
-                  name: formData.get('name'),
-                  venue: formData.get('venue')
-                })
-              }}
-              className="space-y-4"
-            >
-              <input
-                type="date"
-                name="date"
-                required
-                className="w-full input-field"
-              />
-              <input
-                type="text"
-                name="name"
-                placeholder="Programme Name"
-                required
-                className="w-full input-field"
-              />
-              <input
-                type="text"
-                name="venue"
-                placeholder="Venue"
-                required
-                className="w-full input-field"
-              />
-              <button type="submit" className="btn-primary w-full">
-                Create Event
+        {/* Event Selector - Only in Dashboard */}
+        {currentView === 'dashboard' && (
+          <>
+            <div className="mb-6 flex gap-4">
+              <div className="flex-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Event</label>
+                <select
+                  value={currentEvent?.id || ''}
+                  onChange={(e) => switchEvent(Number(e.target.value))}
+                  className="w-full input-field"
+                >
+                  <option value="">Select an event</option>
+                  {events.map(event => (
+                    <option key={event.id} value={event.id}>
+                      {event.name} ({event.date})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => setShowEventForm(!showEventForm)}
+                className="btn-primary self-end"
+              >
+                + New Event
               </button>
-            </form>
-          </div>
+            </div>
+
+            {/* Add Event Form */}
+            {showEventForm && (
+              <div className="card mb-6 border-2 border-blue-400">
+                <h3 className="text-lg font-bold mb-4">Create New Event</h3>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    const formData = new FormData(e.target)
+                    addEvent({
+                      date: formData.get('date'),
+                      name: formData.get('name'),
+                      venue: formData.get('venue')
+                    })
+                  }}
+                  className="space-y-4"
+                >
+                  <input
+                    type="date"
+                    name="date"
+                    required
+                    className="w-full input-field"
+                  />
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Programme Name"
+                    required
+                    className="w-full input-field"
+                  />
+                  <input
+                    type="text"
+                    name="venue"
+                    placeholder="Venue"
+                    required
+                    className="w-full input-field"
+                  />
+                  <button type="submit" className="btn-primary w-full">
+                    Create Event
+                  </button>
+                </form>
+              </div>
+            )}
+          </>
         )}
 
         {/* View Content */}
